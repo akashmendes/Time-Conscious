@@ -7,22 +7,12 @@
 
 <style>
   :root {
-    --bg: #ffffff;
-    --card: rgba(0,0,0,0.03);
-    --border: rgba(0,0,0,0.08);
-    --text: #111;
-    --muted: rgba(0,0,0,0.55);
+    --bg: #0f1115;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e8e8;
+    --muted: rgba(255,255,255,0.6);
     --live: #ef4444;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1115;
-      --card: rgba(255,255,255,0.03);
-      --border: rgba(255,255,255,0.06);
-      --text: #e8e8e8;
-      --muted: rgba(255,255,255,0.6);
-    }
   }
 
   body {
@@ -43,7 +33,7 @@
 
   .title {
     font-size: 13px;
-    opacity: .75;
+    opacity: .8;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
@@ -59,8 +49,8 @@
   }
 
   @keyframes pulse {
-    0%   { transform: scale(1); opacity: 1; }
-    50%  { transform: scale(1.4); opacity: .5; }
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: .4; }
     100% { transform: scale(1); opacity: 1; }
   }
 
@@ -79,17 +69,18 @@
 
   .value {
     font-variant-numeric: tabular-nums;
-    transition: opacity 0.25s ease;
+    transition: opacity .25s ease, transform .25s ease;
   }
 
+  /* 🔥 visible animation */
   .value.update {
-    opacity: 0.35;
+    opacity: 0;
+    transform: scale(0.94);
   }
 
-  /* 🔥 Most dangerous unit */
   .danger {
-    font-weight: 600;
     color: #ef4444;
+    font-weight: 600;
   }
 
   .day-wrap {
@@ -100,14 +91,14 @@
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    opacity: .7;
+    opacity: .75;
     margin-bottom: 4px;
   }
 
   .day-bar {
     width: 100%;
     height: 6px;
-    background: rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.12);
     border-radius: 999px;
     overflow: hidden;
   }
@@ -117,7 +108,7 @@
     width: 0%;
     background: linear-gradient(90deg, #3b82f6, #ef4444);
     border-radius: 999px;
-    transition: width 0.6s ease;
+    transition: width 1s linear;
   }
 </style>
 </head>
@@ -135,22 +126,18 @@
     <span class="label">1 second</span>
     <span class="value" id="sec">—</span>
   </div>
-
   <div class="row">
     <span class="label">10 minutes</span>
     <span class="value" id="tenMin">—</span>
   </div>
-
   <div class="row">
     <span class="label">1 hour</span>
     <span class="value danger" id="hour">—</span>
   </div>
-
   <div class="row">
     <span class="label">12 hours</span>
     <span class="value" id="halfDay">—</span>
   </div>
-
   <div class="row">
     <span class="label">1 day</span>
     <span class="value" id="day">—</span>
@@ -177,13 +164,11 @@
 
   function format(seconds) {
     seconds = Math.ceil(seconds);
-
     const d = Math.floor(seconds / 86400);
     seconds %= 86400;
     const h = Math.floor(seconds / 3600);
     seconds %= 3600;
     const m = Math.floor(seconds / 60);
-
     if (d) return `${d}d ${h}h`;
     if (h) return `${h}h ${m}m`;
     if (m) return `${m}m`;
@@ -194,47 +179,40 @@
     const el = document.getElementById(id);
     if (el.textContent !== text) {
       el.classList.add("update");
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         el.textContent = text;
         el.classList.remove("update");
-      });
+      }, 120);
     }
   }
 
   function updateTimeValue() {
     const now = new Date();
     const remaining = (EXAM.primary - now) / 1000;
-    const penalty   = (EXAM.penalty - EXAM.primary) / 1000;
+    const penalty = (EXAM.penalty - EXAM.primary) / 1000;
 
-    if (!isFinite(remaining) || remaining <= 0) {
-      document.querySelectorAll(".value").forEach(v => {
-        v.textContent = "Exam passed";
-      });
-      return;
-    }
+    if (remaining <= 0) return;
 
-    const timeMultiplier = (remaining + penalty) / remaining;
+    const multiplier = (remaining + penalty) / remaining;
 
-    setValue("sec",      format(1 * timeMultiplier));
-    setValue("tenMin",  format(600 * timeMultiplier));
-    setValue("hour",    format(3600 * timeMultiplier));
-    setValue("halfDay", format(43200 * timeMultiplier));
-    setValue("day",     format(86400 * timeMultiplier));
+    setValue("sec", format(1 * multiplier));
+    setValue("tenMin", format(600 * multiplier));
+    setValue("hour", format(3600 * multiplier));
+    setValue("halfDay", format(43200 * multiplier));
+    setValue("day", format(86400 * multiplier));
   }
 
   function updateDayProgress() {
     const now = new Date();
-
     const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-
+    start.setHours(0,0,0,0);
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
 
     const percent = ((now - start) / (end - start)) * 100;
 
     document.getElementById("dayPercent").textContent =
-      percent.toFixed(0) + "%";
+      percent.toFixed(1) + "%";
 
     document.getElementById("dayFill").style.width =
       percent + "%";
