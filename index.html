@@ -76,7 +76,21 @@
   }
 
   .label { color: var(--muted); }
-  .value { font-variant-numeric: tabular-nums; }
+
+  .value {
+    font-variant-numeric: tabular-nums;
+    transition: opacity 0.25s ease;
+  }
+
+  .value.update {
+    opacity: 0.35;
+  }
+
+  /* 🔥 Most dangerous unit */
+  .danger {
+    font-weight: 600;
+    color: #ef4444;
+  }
 
   .day-wrap {
     margin-top: 14px;
@@ -121,18 +135,22 @@
     <span class="label">1 second</span>
     <span class="value" id="sec">—</span>
   </div>
+
   <div class="row">
     <span class="label">10 minutes</span>
     <span class="value" id="tenMin">—</span>
   </div>
+
   <div class="row">
     <span class="label">1 hour</span>
-    <span class="value" id="hour">—</span>
+    <span class="value danger" id="hour">—</span>
   </div>
+
   <div class="row">
     <span class="label">12 hours</span>
     <span class="value" id="halfDay">—</span>
   </div>
+
   <div class="row">
     <span class="label">1 day</span>
     <span class="value" id="day">—</span>
@@ -151,10 +169,10 @@
 </div>
 
 <script>
-  /* ===== Exam Configuration (edit only here) ===== */
+  /* ===== Exam Configuration ===== */
   const EXAM = {
-    primary: new Date(Date.UTC(2026, 4, 3, 0, 0, 0)), // target exam
-    penalty: new Date(Date.UTC(2027, 4, 3, 0, 0, 0))  // cost of failing
+    primary: new Date(Date.UTC(2026, 4, 3, 0, 0, 0)),
+    penalty: new Date(Date.UTC(2027, 4, 3, 0, 0, 0))
   };
 
   function format(seconds) {
@@ -172,9 +190,19 @@
     return `${seconds}s`;
   }
 
+  function setValue(id, text) {
+    const el = document.getElementById(id);
+    if (el.textContent !== text) {
+      el.classList.add("update");
+      requestAnimationFrame(() => {
+        el.textContent = text;
+        el.classList.remove("update");
+      });
+    }
+  }
+
   function updateTimeValue() {
     const now = new Date();
-
     const remaining = (EXAM.primary - now) / 1000;
     const penalty   = (EXAM.penalty - EXAM.primary) / 1000;
 
@@ -185,14 +213,13 @@
       return;
     }
 
-    // Time Value Multiplier: time now vs time lost if delayed
     const timeMultiplier = (remaining + penalty) / remaining;
 
-    document.getElementById("sec").textContent      = format(1 * timeMultiplier);
-    document.getElementById("tenMin").textContent  = format(600 * timeMultiplier);
-    document.getElementById("hour").textContent    = format(3600 * timeMultiplier);
-    document.getElementById("halfDay").textContent = format(43200 * timeMultiplier);
-    document.getElementById("day").textContent     = format(86400 * timeMultiplier);
+    setValue("sec",      format(1 * timeMultiplier));
+    setValue("tenMin",  format(600 * timeMultiplier));
+    setValue("hour",    format(3600 * timeMultiplier));
+    setValue("halfDay", format(43200 * timeMultiplier));
+    setValue("day",     format(86400 * timeMultiplier));
   }
 
   function updateDayProgress() {
