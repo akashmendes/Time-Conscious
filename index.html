@@ -7,12 +7,22 @@
 
 <style>
   :root {
-    --bg: #0f1115;
-    --card: rgba(255,255,255,0.04);
-    --border: rgba(255,255,255,0.08);
-    --text: #e8e8e8;
-    --muted: rgba(255,255,255,0.6);
+    --bg: #ffffff;
+    --card: rgba(0,0,0,0.03);
+    --border: rgba(0,0,0,0.08);
+    --text: #111;
+    --muted: rgba(0,0,0,0.55);
     --live: #ef4444;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --card: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
+      --text: #e8e8e8;
+      --muted: rgba(255,255,255,0.6);
+    }
   }
 
   body {
@@ -33,7 +43,7 @@
 
   .title {
     font-size: 13px;
-    opacity: .8;
+    opacity: .75;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
@@ -50,7 +60,7 @@
 
   @keyframes pulse {
     0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: .4; }
+    50% { transform: scale(1.4); opacity: .5; }
     100% { transform: scale(1); opacity: 1; }
   }
 
@@ -69,18 +79,16 @@
 
   .value {
     font-variant-numeric: tabular-nums;
-    transition: opacity .25s ease, transform .25s ease;
+    transition: opacity 0.25s ease;
   }
 
-  /* 🔥 visible animation */
-  .value.update {
+  .fade {
     opacity: 0;
-    transform: scale(0.94);
   }
 
   .danger {
-    color: #ef4444;
     font-weight: 600;
+    color: #ef4444;
   }
 
   .day-wrap {
@@ -91,14 +99,14 @@
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    opacity: .75;
+    opacity: .7;
     margin-bottom: 4px;
   }
 
   .day-bar {
     width: 100%;
     height: 6px;
-    background: rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.1);
     border-radius: 999px;
     overflow: hidden;
   }
@@ -108,7 +116,7 @@
     width: 0%;
     background: linear-gradient(90deg, #3b82f6, #ef4444);
     border-radius: 999px;
-    transition: width 1s linear;
+    transition: width 0.4s linear;
   }
 </style>
 </head>
@@ -122,31 +130,16 @@
     Live
   </div>
 
-  <div class="row">
-    <span class="label">1 second</span>
-    <span class="value" id="sec">—</span>
-  </div>
-  <div class="row">
-    <span class="label">10 minutes</span>
-    <span class="value" id="tenMin">—</span>
-  </div>
-  <div class="row">
-    <span class="label">1 hour</span>
-    <span class="value danger" id="hour">—</span>
-  </div>
-  <div class="row">
-    <span class="label">12 hours</span>
-    <span class="value" id="halfDay">—</span>
-  </div>
-  <div class="row">
-    <span class="label">1 day</span>
-    <span class="value" id="day">—</span>
-  </div>
+  <div class="row"><span class="label">1 second</span><span class="value" id="sec">—</span></div>
+  <div class="row"><span class="label">10 minutes</span><span class="value" id="tenMin">—</span></div>
+  <div class="row"><span class="label">1 hour</span><span class="value danger" id="hour">—</span></div>
+  <div class="row"><span class="label">12 hours</span><span class="value" id="halfDay">—</span></div>
+  <div class="row"><span class="label">1 day</span><span class="value" id="day">—</span></div>
 
   <div class="day-wrap">
     <div class="day-head">
       <span>Day completed</span>
-      <span id="dayPercent">0%</span>
+      <span id="dayPercent">0.0%</span>
     </div>
     <div class="day-bar">
       <div class="day-fill" id="dayFill"></div>
@@ -156,7 +149,6 @@
 </div>
 
 <script>
-  /* ===== Exam Configuration ===== */
   const EXAM = {
     primary: new Date(Date.UTC(2026, 4, 3, 0, 0, 0)),
     penalty: new Date(Date.UTC(2027, 4, 3, 0, 0, 0))
@@ -175,47 +167,41 @@
     return `${seconds}s`;
   }
 
-  function setValue(id, text) {
+  function animateValue(id, text) {
     const el = document.getElementById(id);
-    if (el.textContent !== text) {
-      el.classList.add("update");
-      setTimeout(() => {
-        el.textContent = text;
-        el.classList.remove("update");
-      }, 120);
-    }
+    if (el.textContent === text) return;
+    el.classList.add("fade");
+    setTimeout(() => {
+      el.textContent = text;
+      el.classList.remove("fade");
+    }, 120);
   }
 
   function updateTimeValue() {
     const now = new Date();
     const remaining = (EXAM.primary - now) / 1000;
     const penalty = (EXAM.penalty - EXAM.primary) / 1000;
-
     if (remaining <= 0) return;
 
-    const multiplier = (remaining + penalty) / remaining;
+    const m = (remaining + penalty) / remaining;
 
-    setValue("sec", format(1 * multiplier));
-    setValue("tenMin", format(600 * multiplier));
-    setValue("hour", format(3600 * multiplier));
-    setValue("halfDay", format(43200 * multiplier));
-    setValue("day", format(86400 * multiplier));
+    animateValue("sec", format(1 * m));
+    animateValue("tenMin", format(600 * m));
+    animateValue("hour", format(3600 * m));
+    animateValue("halfDay", format(43200 * m));
+    animateValue("day", format(86400 * m));
   }
 
   function updateDayProgress() {
     const now = new Date();
-    const start = new Date(now);
-    start.setHours(0,0,0,0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+    const start = new Date(now); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(end.getDate() + 1);
 
     const percent = ((now - start) / (end - start)) * 100;
 
+    document.getElementById("dayFill").style.width = percent + "%";
     document.getElementById("dayPercent").textContent =
       percent.toFixed(1) + "%";
-
-    document.getElementById("dayFill").style.width =
-      percent + "%";
   }
 
   updateTimeValue();
