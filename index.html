@@ -50,7 +50,6 @@
     gap: 6px;
   }
 
-  /* 🔴 Live dot */
   .live-dot {
     width: 8px;
     height: 8px;
@@ -79,7 +78,6 @@
   .label { color: var(--muted); }
   .value { font-variant-numeric: tabular-nums; }
 
-  /* 🌅 Day progress */
   .day-wrap {
     margin-top: 14px;
   }
@@ -140,7 +138,6 @@
     <span class="value" id="day">—</span>
   </div>
 
-  <!-- 🌅 Day Progress -->
   <div class="day-wrap">
     <div class="day-head">
       <span>Day completed</span>
@@ -154,9 +151,11 @@
 </div>
 
 <script>
-  /* ===== Exam dates (IST safe) ===== */
-  const EXAM_2026 = new Date(Date.UTC(2026, 4, 2, 24, 0, 0));
-  const EXAM_2027 = new Date(Date.UTC(2027, 4, 2, 24, 0, 0));
+  /* ===== Exam Configuration (edit only here) ===== */
+  const EXAM = {
+    primary: new Date(Date.UTC(2026, 4, 3, 0, 0, 0)), // target exam
+    penalty: new Date(Date.UTC(2027, 4, 3, 0, 0, 0))  // cost of failing
+  };
 
   function format(seconds) {
     seconds = Math.ceil(seconds);
@@ -175,8 +174,9 @@
 
   function updateTimeValue() {
     const now = new Date();
-    const remaining = (EXAM_2026 - now) / 1000;
-    const penalty = (EXAM_2027 - EXAM_2026) / 1000;
+
+    const remaining = (EXAM.primary - now) / 1000;
+    const penalty   = (EXAM.penalty - EXAM.primary) / 1000;
 
     if (!isFinite(remaining) || remaining <= 0) {
       document.querySelectorAll(".value").forEach(v => {
@@ -185,23 +185,26 @@
       return;
     }
 
-    const TVR = (remaining + penalty) / remaining;
+    // Time Value Multiplier: time now vs time lost if delayed
+    const timeMultiplier = (remaining + penalty) / remaining;
 
-    document.getElementById("sec").textContent     = format(1 * TVR);
-    document.getElementById("tenMin").textContent = format(600 * TVR);
-    document.getElementById("hour").textContent   = format(3600 * TVR);
-    document.getElementById("halfDay").textContent= format(43200 * TVR);
-    document.getElementById("day").textContent    = format(86400 * TVR);
+    document.getElementById("sec").textContent      = format(1 * timeMultiplier);
+    document.getElementById("tenMin").textContent  = format(600 * timeMultiplier);
+    document.getElementById("hour").textContent    = format(3600 * timeMultiplier);
+    document.getElementById("halfDay").textContent = format(43200 * timeMultiplier);
+    document.getElementById("day").textContent     = format(86400 * timeMultiplier);
   }
 
   function updateDayProgress() {
     const now = new Date();
-    const secondsToday =
-      now.getHours() * 3600 +
-      now.getMinutes() * 60 +
-      now.getSeconds();
 
-    const percent = (secondsToday / 86400) * 100;
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    const percent = ((now - start) / (end - start)) * 100;
 
     document.getElementById("dayPercent").textContent =
       percent.toFixed(0) + "%";
@@ -213,8 +216,8 @@
   updateTimeValue();
   updateDayProgress();
 
-  setInterval(updateTimeValue, 60000); // calm background update
-  setInterval(updateDayProgress, 1000); // live day sync
+  setInterval(updateTimeValue, 60000);
+  setInterval(updateDayProgress, 1000);
 </script>
 </body>
 </html>
